@@ -3,9 +3,11 @@
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { AppChrome } from "@/components/AppChrome";
 import { AuthGate } from "@/components/AuthGate";
 import { supabase } from "@/lib/supabase";
 import type { Database } from "@/lib/supabase";
@@ -19,7 +21,9 @@ type ProjectRow = Pick<
 export default function DashboardPage() {
     return (
         <AuthGate fallback={<LandingFallback />}>
-            <DashboardInner />
+            <AppChrome>
+                <DashboardInner />
+            </AppChrome>
         </AuthGate>
     );
 }
@@ -36,7 +40,7 @@ function LandingFallback() {
             </p>
             <Link
                 href="/"
-                className="inline-flex items-center justify-center rounded-lg border border-slate-800 bg-slate-900/50 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-brand-500 hover:bg-brand-500/10">
+                className="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-slate-600">
                 Back to landing
             </Link>
         </div>
@@ -153,23 +157,15 @@ function DashboardInner() {
         setName("");
     }
 
-    async function handleSignOut() {
-        await supabase.auth.signOut();
-        window.location.href = "/";
-    }
-
     return (
-        <main className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-16">
-            <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p className="text-sm uppercase tracking-[0.3em] text-brand-400">
-                        Dashboard
-                    </p>
-                    <h1 className="mt-2 text-3xl font-semibold text-slate-100">
-                        Projects
-                    </h1>
-                </div>
-                <Button onClick={handleSignOut}>Sign out</Button>
+        <div className="space-y-8">
+            <header>
+                <h1 className="text-3xl font-semibold text-slate-100">
+                    Projects
+                </h1>
+                <p className="mt-2 text-slate-400">
+                    Manage your encrypted environment projects
+                </p>
             </header>
 
             <Card title="Create new project">
@@ -180,14 +176,15 @@ function DashboardInner() {
                         type="text"
                         value={name}
                         onChange={(event) => setName(event.target.value)}
-                        placeholder="My project"
-                        className="w-full rounded-lg border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-200 outline-none focus:border-brand-500"
+                        placeholder="Project name"
+                        className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none"
                     />
-                    <Button type="submit" className="sm:w-40">
+                    <Button type="submit" className="sm:w-32">
+                        <Plus className="h-4 w-4" />
                         Create
                     </Button>
                 </form>
-                {error && <p className="text-sm text-red-400">{error}</p>}
+                {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
             </Card>
 
             <section className="space-y-4">
@@ -199,11 +196,11 @@ function DashboardInner() {
                         Loading projects...
                     </p>
                 ) : projects.length ? (
-                    <ul className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-4 sm:grid-cols-2">
                         {projects.map((project) => (
-                            <li
+                            <div
                                 key={project.id}
-                                className="rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                                className="rounded-lg border border-slate-700 bg-slate-800 p-4">
                                 <h3 className="text-base font-semibold text-slate-100">
                                     {project.name}
                                 </h3>
@@ -220,15 +217,15 @@ function DashboardInner() {
                                     }>
                                     Manage members
                                 </Button>
-                            </li>
+                            </div>
                         ))}
-                    </ul>
+                    </div>
                 ) : (
                     <p className="text-sm text-slate-400">
                         No projects yet. Create one above to get started.
                     </p>
                 )}
             </section>
-        </main>
+        </div>
     );
 }

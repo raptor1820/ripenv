@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { AppChrome } from "@/components/AppChrome";
 import { AuthGate } from "@/components/AuthGate";
 import {
     buildKeyfile,
@@ -95,12 +96,9 @@ function KeysInner() {
     }
 
     return (
-        <main className="mx-auto flex min-h-screen w-full max-w-4xl flex-col gap-8 px-6 py-16">
-            <section>
-                <p className="text-sm uppercase tracking-[0.3em] text-brand-400">
-                    Key management
-                </p>
-                <h1 className="mt-4 text-3xl font-semibold text-slate-100">
+        <div className="space-y-8">
+            <header>
+                <h1 className="text-3xl font-semibold text-slate-100">
                     Generate and upload your keypair
                 </h1>
                 <p className="mt-2 max-w-2xl text-sm text-slate-400">
@@ -108,7 +106,7 @@ function KeysInner() {
                     Argon2id + SecretBox, and uploaded to Supabase with only the
                     encrypted private key.
                 </p>
-            </section>
+            </header>
 
             <Card
                 title="Generate keypair"
@@ -125,7 +123,8 @@ function KeysInner() {
                                 onChange={(
                                     event: ChangeEvent<HTMLInputElement>
                                 ) => setPassword(event.target.value)}
-                                className="w-full rounded-lg border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-100 outline-none focus:border-brand-500"
+                                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-slate-100 focus:border-brand-500 focus:outline-none"
+                                placeholder="Enter secure password"
                                 required
                             />
                         </label>
@@ -139,7 +138,8 @@ function KeysInner() {
                                 onChange={(
                                     event: ChangeEvent<HTMLInputElement>
                                 ) => setConfirmPassword(event.target.value)}
-                                className="w-full rounded-lg border border-slate-800 bg-slate-950 px-4 py-2 text-sm text-slate-100 outline-none focus:border-brand-500"
+                                className="w-full rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-sm text-slate-100 focus:border-brand-500 focus:outline-none"
+                                placeholder="Confirm password"
                                 required
                             />
                         </label>
@@ -155,7 +155,7 @@ function KeysInner() {
                     {error && <p className="text-sm text-red-400">{error}</p>}
                 </form>
             </Card>
-        </main>
+        </div>
     );
 }
 
@@ -167,7 +167,9 @@ export default function KeysPage() {
                     Sign in to manage keys.
                 </p>
             }>
-            <KeysInner />
+            <AppChrome>
+                <KeysInner />
+            </AppChrome>
         </AuthGate>
     );
 }

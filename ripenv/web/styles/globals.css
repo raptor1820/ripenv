@@ -17,3 +17,401 @@ a {
 * {
     box-sizing: border-box;
 }
+
+/* Aurora background animations */
+.aurora-layer {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+            circle at 20% 50%,
+            rgba(99, 102, 241, 0.15) 0%,
+            transparent 50%
+        ),
+        radial-gradient(
+            circle at 80% 20%,
+            rgba(56, 189, 248, 0.12) 0%,
+            transparent 50%
+        ),
+        radial-gradient(
+            circle at 40% 80%,
+            rgba(168, 85, 247, 0.1) 0%,
+            transparent 50%
+        );
+    animation: aurora-shift 20s ease-in-out infinite;
+}
+
+.aurora-noise {
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(
+            circle at 25% 25%,
+            rgba(99, 102, 241, 0.3) 0%,
+            transparent 25%
+        ),
+        radial-gradient(
+            circle at 75% 75%,
+            rgba(56, 189, 248, 0.2) 0%,
+            transparent 25%
+        );
+    background-size: 100px 100px;
+    animation: aurora-drift 15s linear infinite;
+    opacity: 0.6;
+}
+
+.wild-nav-mask {
+    background: rgba(15, 23, 42, 0.85);
+    backdrop-filter: blur(20px);
+    border-radius: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+@keyframes aurora-shift {
+    0%,
+    100% {
+        transform: translateX(0) translateY(0) scale(1);
+    }
+    25% {
+        transform: translateX(2%) translateY(-1%) scale(1.02);
+    }
+    50% {
+        transform: translateX(-1%) translateY(2%) scale(0.98);
+    }
+    75% {
+        transform: translateX(1%) translateY(-1.5%) scale(1.01);
+    }
+}
+
+@keyframes aurora-drift {
+    0% {
+        transform: translateX(-50px) translateY(-50px);
+    }
+    100% {
+        transform: translateX(50px) translateY(50px);
+    }
+}
+
+/* Enhanced scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(15, 23, 42, 0.8);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(
+        180deg,
+        rgba(99, 102, 241, 0.6),
+        rgba(56, 189, 248, 0.4)
+    );
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(
+        180deg,
+        rgba(99, 102, 241, 0.8),
+        rgba(56, 189, 248, 0.6)
+    );
+}
+
+/* Custom animations for the insane landing page */
+@keyframes gradient {
+    0%,
+    100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+@keyframes gradient-reverse {
+    0%,
+    100% {
+        background-position: 100% 50%;
+    }
+    50% {
+        background-position: 0% 50%;
+    }
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0px) scale(1);
+    }
+    50% {
+        transform: translateY(-20px) scale(1.05);
+    }
+}
+
+@keyframes pulse-glow {
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+    }
+    50% {
+        box-shadow: 0 0 40px rgba(99, 102, 241, 0.6);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200px 0;
+    }
+    100% {
+        background-position: calc(200px + 100%) 0;
+    }
+}
+
+.animate-gradient {
+    background-size: 300% 300%;
+    animation: gradient 4s ease infinite;
+}
+
+.animate-gradient-reverse {
+    background-size: 300% 300%;
+    animation: gradient-reverse 4s ease infinite;
+}
+
+.floating-orb {
+    animation: float 6s ease-in-out infinite;
+}
+
+.floating-orb:nth-child(2) {
+    animation-delay: 2s;
+    animation-duration: 8s;
+}
+
+.floating-orb:nth-child(3) {
+    animation-delay: 4s;
+    animation-duration: 7s;
+}
+
+.hero-text {
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-text::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.1),
+        transparent
+    );
+    animation: shimmer 3s infinite;
+}
+
+.cursor-hover {
+    transition: all 0.2s ease;
+}
+
+.cursor-hover:hover {
+    transform: translateY(-2px);
+}
+
+/* Enhanced grid pattern */
+.bg-grid-pattern {
+    background-size: 60px 60px;
+    background-image: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.03) 1px,
+            transparent 1px
+        ),
+        linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+}
+
+/* Cyber grid effects */
+.cyber-grid-container {
+    position: absolute;
+    inset: 0;
+    opacity: 0.3;
+}
+
+.cyber-grid-horizontal {
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 49px,
+        rgba(34, 197, 94, 0.3) 50px,
+        rgba(34, 197, 94, 0.1) 52px
+    );
+    animation: grid-shift-y 8s linear infinite;
+}
+
+.cyber-grid-vertical {
+    position: absolute;
+    inset: 0;
+    background-image: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 49px,
+        rgba(6, 182, 212, 0.3) 50px,
+        rgba(6, 182, 212, 0.1) 52px
+    );
+    animation: grid-shift-x 10s linear infinite;
+}
+
+.cyber-nodes {
+    position: absolute;
+    inset: 0;
+}
+
+.cyber-node {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: radial-gradient(
+        circle,
+        rgba(34, 197, 94, 0.8) 0%,
+        transparent 70%
+    );
+    border-radius: 50%;
+    animation: node-pulse 3s ease-in-out infinite;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+}
+
+.scanner-line-horizontal {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(34, 197, 94, 0.8),
+        transparent
+    );
+    animation: scan-horizontal 6s linear infinite;
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.6);
+}
+
+.scanner-line-vertical {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(
+        0deg,
+        transparent,
+        rgba(6, 182, 212, 0.8),
+        transparent
+    );
+    animation: scan-vertical 8s linear infinite;
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.6);
+}
+
+.glitch-overlay {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 2px,
+        rgba(34, 197, 94, 0.03) 2px,
+        rgba(34, 197, 94, 0.03) 4px
+    );
+    animation: glitch-flicker 0.1s infinite alternate;
+}
+
+.cyber-orb {
+    animation: cyber-float 6s ease-in-out infinite;
+}
+
+.terminal-cursor {
+    filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.8));
+}
+
+/* Cyber animations */
+@keyframes grid-shift-x {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(50px);
+    }
+}
+
+@keyframes grid-shift-y {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(50px);
+    }
+}
+
+@keyframes node-pulse {
+    0%,
+    100% {
+        opacity: 0.3;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.5);
+    }
+}
+
+@keyframes scan-horizontal {
+    0% {
+        transform: translateY(0);
+    }
+    100% {
+        transform: translateY(100vh);
+    }
+}
+
+@keyframes scan-vertical {
+    0% {
+        transform: translateX(0);
+    }
+    100% {
+        transform: translateX(100vw);
+    }
+}
+
+@keyframes glitch-flicker {
+    0% {
+        opacity: 0.02;
+    }
+    100% {
+        opacity: 0.05;
+    }
+}
+
+@keyframes cyber-float {
+    0%,
+    100% {
+        transform: translateY(0px) scale(1);
+    }
+    50% {
+        transform: translateY(-30px) scale(1.1);
+    }
+}
+
+@keyframes blink {
+    0%,
+    50% {
+        opacity: 1;
+    }
+    51%,
+    100% {
+        opacity: 0;
+    }
+}

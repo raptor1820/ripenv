@@ -16,7 +16,7 @@ export default function RootLayout({ children }: PropsWithChildren) {
         <html lang="en" className="bg-slate-950">
             <body
                 suppressHydrationWarning
-                className={`${inter.className} min-h-screen bg-slate-950`}>
+                className={`${inter.className} min-h-screen bg-slate-950 antialiased`}>
                 {children}
             </body>
         </html>

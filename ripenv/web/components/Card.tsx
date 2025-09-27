@@ -10,17 +10,17 @@ type CardProps = PropsWithChildren<{
 
 export function Card({ title, description, actions, children }: CardProps) {
     return (
-        <section className="rounded-2xl border border-slate-800 bg-slate-900/60 p-6 shadow-lg">
+        <section className="rounded-lg border border-green-500/20 bg-black/40 backdrop-blur p-6">
             {(title || description || actions) && (
                 <header className="mb-4 flex items-start justify-between gap-4">
                     <div>
                         {title && (
-                            <h2 className="text-lg font-semibold text-slate-100">
+                            <h2 className="text-lg font-semibold text-green-300 font-mono">
                                 {title}
                             </h2>
                         )}
                         {description && (
-                            <p className="mt-1 text-sm text-slate-400">
+                            <p className="mt-1 text-sm text-green-500/80">
                                 {description}
                             </p>
                         )}
@@ -30,7 +30,7 @@ export function Card({ title, description, actions, children }: CardProps) {
                     )}
                 </header>
             )}
-            <div className="space-y-4 text-sm text-slate-200">{children}</div>
+            <div className="space-y-4 text-sm text-green-100">{children}</div>
         </section>
     );
 }
