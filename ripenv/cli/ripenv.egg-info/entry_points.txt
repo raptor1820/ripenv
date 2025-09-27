@@ -1,0 +1,2 @@
+[console_scripts]
+ripenv = ripenv.main:app

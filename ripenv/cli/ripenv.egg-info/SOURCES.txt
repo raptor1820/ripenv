@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+ripenv/__init__.py
+ripenv/crypto.py
+ripenv/keyfile.py
+ripenv/main.py
+ripenv/manifest.py
+ripenv/types.py
+ripenv.egg-info/PKG-INFO
+ripenv.egg-info/SOURCES.txt
+ripenv.egg-info/dependency_links.txt
+ripenv.egg-info/entry_points.txt
+ripenv.egg-info/requires.txt
+ripenv.egg-info/top_level.txt
+tests/test_roundtrip.py
