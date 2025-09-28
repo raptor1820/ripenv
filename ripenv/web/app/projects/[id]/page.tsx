@@ -3,7 +3,7 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { UserPlus, Download, ArrowLeft, Trash2 } from "lucide-react";
+import { UserPlus, Download, ArrowLeft, Trash2, Copy } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -36,6 +36,17 @@ function ProjectPageInner() {
     const [email, setEmail] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = async (text: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+            console.error("Failed to copy to clipboard:", err);
+        }
+    };
 
     useEffect(() => {
         async function load() {
@@ -269,9 +280,34 @@ function ProjectPageInner() {
                         <h1 className="text-3xl font-semibold text-slate-100">
                             {projectName || "Project"}
                         </h1>
-                        <p className="mt-1 font-mono text-xs text-slate-500">
-                            ID: {projectId}
-                        </p>
+                        <div className="mt-2 flex items-center gap-2 rounded-lg bg-slate-800/50 p-3 border border-slate-700/50">
+                            <div className="flex-1">
+                                <p className="text-xs text-slate-400 mb-1 font-semibold uppercase tracking-wide">
+                                    PROJECT ID
+                                </p>
+                                <p className="font-mono text-sm text-slate-200 font-semibold">
+                                    {projectId}
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => copyToClipboard(projectId)}
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 rounded-md hover:bg-slate-700/50 transition-colors"
+                                title="Copy project ID to clipboard">
+                                {copied ? (
+                                    <>
+                                        <div className="h-3 w-3 rounded-full bg-green-500" />
+                                        <span className="text-green-400">
+                                            Copied!
+                                        </span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Copy className="h-3 w-3" />
+                                        <span>Copy</span>
+                                    </>
+                                )}
+                            </button>
+                        </div>
                         <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
                             {currentUserId === projectOwner
                                 ? "Owner"

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Copy } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -53,6 +53,17 @@ function DashboardInner() {
     const [error, setError] = useState<string | null>(null);
     const [name, setName] = useState("");
     const [userId, setUserId] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    const copyToClipboard = async (text: string, projectId: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedId(projectId);
+            setTimeout(() => setCopiedId(null), 2000); // Reset after 2 seconds
+        } catch (err) {
+            console.error("Failed to copy text: ", err);
+        }
+    };
 
     useEffect(() => {
         let mounted = true;
@@ -261,12 +272,34 @@ function DashboardInner() {
                                                     ? "Owner"
                                                     : "Member"}
                                             </p>
-                                            <p className="text-xs uppercase tracking-wide text-slate-500 mt-1">
-                                                Project ID
-                                            </p>
-                                            <p className="break-all text-xs text-slate-400">
-                                                {project.id}
-                                            </p>
+                                            <div className="mt-3">
+                                                <p className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+                                                    Project ID
+                                                </p>
+                                                <div className="flex items-center gap-2 rounded-lg bg-slate-900 px-3 py-2 border border-slate-600">
+                                                    <code className="flex-1 break-all text-sm font-mono text-slate-200">
+                                                        {project.id}
+                                                    </code>
+                                                    <button
+                                                        onClick={() =>
+                                                            copyToClipboard(
+                                                                project.id,
+                                                                project.id
+                                                            )
+                                                        }
+                                                        className="rounded-md border border-slate-600 bg-slate-700 p-1.5 text-slate-300 transition hover:border-slate-500 hover:bg-slate-600 hover:text-slate-100"
+                                                        title="Copy project ID">
+                                                        {copiedId ===
+                                                        project.id ? (
+                                                            <span className="text-xs text-green-400 px-1">
+                                                                ✓
+                                                            </span>
+                                                        ) : (
+                                                            <Copy className="h-3 w-3" />
+                                                        )}
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     {project.owner === userId && (
