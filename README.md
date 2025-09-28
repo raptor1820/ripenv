@@ -55,12 +55,6 @@ ripenv provides a robust, cryptographically secure solution to prevent these dev
 - **CLI Framework**: Click with Rich for enhanced terminal UI
 - **AI Integration**: Google Gemini for natural language command processing
 
-### **Infrastructure**
-- **Database**: Supabase with real-time subscriptions
-- **Edge Functions**: Deno runtime for serverless operations
-- **Email Service**: Integrated SMTP for rotation reminders
-- **Version Control**: Git-friendly encrypted artifact storage
-
 ## 🚀 Quick Start
 
 ### Prerequisites
