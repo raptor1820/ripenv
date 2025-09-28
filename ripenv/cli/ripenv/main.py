@@ -716,7 +716,8 @@ def encrypt(env_path: Path, project_id: str, out_dir: Path, force: bool, delete:
         "Generate encryption key", 
         "Encrypt environment file",
         "Create manifest",
-        "Save encrypted files"
+        "Save encrypted files",
+        "Update project timestamp"
     ]
     
     if delete:
@@ -802,10 +803,25 @@ def encrypt(env_path: Path, project_id: str, out_dir: Path, force: bool, delete:
         progress.remove_task(task)
 
     console.print(f"[{SUCCESS_COLOR}]✓ Added .gitignore protection[/{SUCCESS_COLOR}]")
+    show_step_progress(encryption_steps, 5)
+    console.print()
     
-    # Step 6: Clean up original file if requested
+    # Step 6: Update project timestamp
+    with create_progress_spinner() as progress:
+        task = progress.add_task("⏰ Updating project timestamp...", total=None)
+        try:
+            client = create_supabase_client()
+            client.update_project_last_edited(project_id)
+            time.sleep(0.2)
+            progress.remove_task(task)
+            console.print(f"[{SUCCESS_COLOR}]✓ Project timestamp updated[/{SUCCESS_COLOR}]")
+        except Exception as e:
+            progress.remove_task(task)
+            console.print(f"[{WARNING_COLOR}]⚠ Could not update timestamp: {e}[/{WARNING_COLOR}]")
+    
+    # Step 7: Clean up original file if requested
     if delete:
-        show_step_progress(encryption_steps, 5)
+        show_step_progress(encryption_steps, 6 if not delete else 6)
         console.print()
         
         with create_progress_spinner() as progress:
@@ -1061,6 +1077,15 @@ def decrypt(folder_path: Path, project_id: str, keyfile_path: Path, force: bool)
         progress.update(task, description="🛡️  Adding .gitignore protection...")
         # Ensure .gitignore exists to prevent accidental commits of the decrypted .env file
         ensure_gitignore_entry(folder_path, DEFAULT_ENV_NAME)
+        
+        progress.update(task, description="⏰ Updating project timestamp...")
+        try:
+            client = create_supabase_client()
+            client.update_project_last_edited(project_id)
+        except Exception as e:
+            # Don't fail decryption if timestamp update fails
+            console.print(f"[{WARNING_COLOR}]⚠ Could not update timestamp: {e}[/{WARNING_COLOR}]")
+        
         time.sleep(0.3)
         progress.remove_task(task)
     

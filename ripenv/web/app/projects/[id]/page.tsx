@@ -3,7 +3,15 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { UserPlus, Download, ArrowLeft, Trash2, Copy } from "lucide-react";
+import {
+    UserPlus,
+    Download,
+    ArrowLeft,
+    Trash2,
+    Copy,
+    Bell,
+    Clock,
+} from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -31,12 +39,23 @@ function ProjectPageInner() {
 
     const [projectName, setProjectName] = useState<string>("");
     const [projectOwner, setProjectOwner] = useState<string>("");
+    const [projectLastEdited, setProjectLastEdited] = useState<string | null>(
+        null
+    );
     const [currentUserId, setCurrentUserId] = useState<string>("");
     const [members, setMembers] = useState<MemberRow[]>([]);
     const [email, setEmail] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [copied, setCopied] = useState(false);
+    const [rotationSettings, setRotationSettings] = useState<{
+        enabled: boolean;
+        interval_days: number;
+        interval_hours: number;
+        interval_minutes: number;
+        id?: string;
+    } | null>(null);
+    const [rotationLoading, setRotationLoading] = useState(false);
 
     const copyToClipboard = async (text: string) => {
         try {
@@ -63,16 +82,25 @@ function ProjectPageInner() {
             const [
                 { data: project, error: projectError },
                 { data: memberRows, error: memberError },
+                { data: rotationData, error: rotationError },
             ] = await Promise.all([
                 supabase
                     .from("projects")
-                    .select("name, owner")
+                    .select("name, owner, last_edited_at")
                     .eq("id", projectId)
                     .single(),
                 supabase
                     .from("project_members")
                     .select("email, public_key, created_at")
                     .eq("project_id", projectId),
+                supabase
+                    .from("rotation_settings")
+                    .select(
+                        "id, enabled, interval_days, interval_hours, interval_minutes, last_reminder_sent"
+                    )
+                    .eq("project_id", projectId)
+                    .eq("user_id", userData.user.id)
+                    .single(),
             ]);
 
             if (projectError) {
@@ -88,6 +116,18 @@ function ProjectPageInner() {
 
             setProjectName(project?.name ?? "");
             setProjectOwner(project?.owner ?? "");
+            setProjectLastEdited(project?.last_edited_at ?? null);
+
+            // Set rotation settings (may be null if not configured)
+            if (rotationData && !rotationError) {
+                setRotationSettings({
+                    id: rotationData.id,
+                    enabled: rotationData.enabled,
+                    interval_days: rotationData.interval_days || 0,
+                    interval_hours: rotationData.interval_hours || 0,
+                    interval_minutes: rotationData.interval_minutes || 0,
+                });
+            }
 
             const emails = (memberRows ?? []).map((member) => member.email);
             let mergedMembers = memberRows ?? [];
@@ -259,6 +299,102 @@ function ProjectPageInner() {
         router.push("/dashboard");
     }
 
+    async function handleRotationSettingsUpdate(
+        enabled: boolean,
+        intervalDays: number,
+        intervalHours: number = 0,
+        intervalMinutes: number = 0
+    ) {
+        if (!currentUserId) return;
+
+        setRotationLoading(true);
+        try {
+            const settingsData = {
+                project_id: projectId,
+                user_id: currentUserId,
+                enabled,
+                interval_days: intervalDays,
+                interval_hours: intervalHours,
+                interval_minutes: intervalMinutes,
+            };
+
+            let result;
+            if (rotationSettings?.id) {
+                // Update existing settings
+                result = await supabase
+                    .from("rotation_settings")
+                    .update({
+                        enabled,
+                        interval_days: intervalDays,
+                        interval_hours: intervalHours,
+                        interval_minutes: intervalMinutes,
+                    })
+                    .eq("id", rotationSettings.id)
+                    .select(
+                        "id, enabled, interval_days, interval_hours, interval_minutes"
+                    )
+                    .single();
+            } else {
+                // Insert new settings
+                result = await supabase
+                    .from("rotation_settings")
+                    .insert(settingsData)
+                    .select(
+                        "id, enabled, interval_days, interval_hours, interval_minutes"
+                    )
+                    .single();
+            }
+
+            if (result.error) {
+                setError(
+                    `Failed to update rotation settings: ${result.error.message}`
+                );
+                return;
+            }
+
+            setRotationSettings({
+                id: result.data.id,
+                enabled: result.data.enabled,
+                interval_days: result.data.interval_days,
+                interval_hours: result.data.interval_hours,
+                interval_minutes: result.data.interval_minutes,
+            });
+
+            // If enabling test mode (0 days), create an immediate notification
+            if (enabled && intervalDays === 0) {
+                await createTestNotification();
+            }
+        } catch (error) {
+            setError(`Failed to update rotation settings: ${error}`);
+        } finally {
+            setRotationLoading(false);
+        }
+    }
+
+    async function createTestNotification() {
+        if (!currentUserId) return;
+
+        try {
+            const { error } = await supabase.from("notifications").insert({
+                user_id: currentUserId,
+                project_id: projectId,
+                type: "rotation_reminder",
+                title: "🧪 TEST: Rotation Reminder",
+                message: `Test notification for project "${projectName}". This is a manual test to verify the notification system is working.`,
+            });
+
+            if (error) {
+                setError(
+                    `Failed to create test notification: ${error.message}`
+                );
+            } else {
+                console.log("Test notification created successfully");
+            }
+        } catch (error) {
+            setError(`Failed to create test notification: ${error}`);
+        }
+    }
+
     const approvedMembers = useMemo(
         () => members.filter((member: MemberRow) => Boolean(member.public_key)),
         [members]
@@ -308,7 +444,27 @@ function ProjectPageInner() {
                                 )}
                             </button>
                         </div>
-                        <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
+
+                        {projectLastEdited && (
+                            <div className="mt-3 rounded-lg bg-slate-800/30 p-3 border border-slate-700/30">
+                                <p className="text-xs text-slate-400 mb-1 font-semibold uppercase tracking-wide">
+                                    Last Environment Update
+                                </p>
+                                <p className="text-sm text-slate-200">
+                                    {new Date(
+                                        projectLastEdited
+                                    ).toLocaleDateString("en-US", {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                    })}
+                                </p>
+                            </div>
+                        )}
+
+                        <p className="mt-3 text-xs uppercase tracking-wide text-slate-400">
                             {currentUserId === projectOwner
                                 ? "Owner"
                                 : "Member"}
@@ -444,6 +600,289 @@ function ProjectPageInner() {
                         </p>
                     </div>
                 )}
+            </Card>
+
+            <Card
+                title="Key Rotation Reminders"
+                description="Configure automatic notifications to rotate your environment secrets for enhanced security.">
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 rounded-lg border border-slate-700 bg-slate-800/50">
+                        <div className="flex items-center gap-3">
+                            <Bell className="h-5 w-5 text-slate-400" />
+                            <div>
+                                <p className="font-semibold text-slate-200">
+                                    Notifications
+                                </p>
+                                <p className="text-sm text-slate-400">
+                                    Get notified when it's time to rotate
+                                    secrets
+                                </p>
+                            </div>
+                        </div>
+                        <button
+                            onClick={() =>
+                                handleRotationSettingsUpdate(
+                                    !(rotationSettings?.enabled ?? false),
+                                    rotationSettings?.interval_days ?? 0,
+                                    rotationSettings?.interval_hours ?? 0,
+                                    rotationSettings?.interval_minutes ?? 30
+                                )
+                            }
+                            disabled={rotationLoading}
+                            title={`${
+                                rotationSettings?.enabled ? "Disable" : "Enable"
+                            } notifications`}
+                            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-slate-900 ${
+                                rotationSettings?.enabled
+                                    ? "bg-brand-500"
+                                    : "bg-slate-600"
+                            } ${
+                                rotationLoading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                            }`}>
+                            <span
+                                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                                    rotationSettings?.enabled
+                                        ? "translate-x-6"
+                                        : "translate-x-1"
+                                }`}
+                            />
+                        </button>
+                    </div>
+
+                    {rotationSettings?.enabled && (
+                        <div className="p-4 rounded-lg border border-slate-700 bg-slate-800/30">
+                            <div className="flex items-center gap-3 mb-4">
+                                <Clock className="h-4 w-4 text-slate-400" />
+                                <label className="font-semibold text-slate-200">
+                                    Reminder Interval
+                                </label>
+                            </div>
+
+                            <div className="space-y-4">
+                                {/* Time inputs */}
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-2">
+                                            Days
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="365"
+                                                value={
+                                                    rotationSettings.interval_days
+                                                }
+                                                onChange={(e) => {
+                                                    const days =
+                                                        parseInt(
+                                                            e.target.value
+                                                        ) || 0;
+                                                    handleRotationSettingsUpdate(
+                                                        true,
+                                                        days,
+                                                        rotationSettings.interval_hours,
+                                                        rotationSettings.interval_minutes
+                                                    );
+                                                }}
+                                                disabled={rotationLoading}
+                                                title="Number of days"
+                                                placeholder="0"
+                                                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-slate-100 focus:border-brand-500 focus:outline-none disabled:opacity-50"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-2">
+                                            Hours
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="23"
+                                                value={
+                                                    rotationSettings.interval_hours
+                                                }
+                                                onChange={(e) => {
+                                                    const hours =
+                                                        parseInt(
+                                                            e.target.value
+                                                        ) || 0;
+                                                    handleRotationSettingsUpdate(
+                                                        true,
+                                                        rotationSettings.interval_days,
+                                                        hours,
+                                                        rotationSettings.interval_minutes
+                                                    );
+                                                }}
+                                                disabled={rotationLoading}
+                                                title="Number of hours (0-23)"
+                                                placeholder="0"
+                                                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-slate-100 focus:border-brand-500 focus:outline-none disabled:opacity-50"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs text-slate-400 mb-2">
+                                            Minutes
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="59"
+                                                value={
+                                                    rotationSettings.interval_minutes
+                                                }
+                                                onChange={(e) => {
+                                                    const minutes =
+                                                        parseInt(
+                                                            e.target.value
+                                                        ) || 0;
+                                                    handleRotationSettingsUpdate(
+                                                        true,
+                                                        rotationSettings.interval_days,
+                                                        rotationSettings.interval_hours,
+                                                        minutes
+                                                    );
+                                                }}
+                                                disabled={rotationLoading}
+                                                title="Number of minutes (0-59)"
+                                                placeholder="0"
+                                                className="w-full rounded-lg border border-slate-600 bg-slate-700 px-3 py-2 text-slate-100 focus:border-brand-500 focus:outline-none disabled:opacity-50"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Quick preset buttons */}
+                                <div className="space-y-2">
+                                    <p className="text-xs text-slate-400">
+                                        Quick presets:
+                                    </p>
+                                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                        <button
+                                            onClick={() =>
+                                                handleRotationSettingsUpdate(
+                                                    true,
+                                                    0,
+                                                    0,
+                                                    1
+                                                )
+                                            }
+                                            disabled={rotationLoading}
+                                            className={`px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-50 ${
+                                                rotationSettings.interval_days ===
+                                                    0 &&
+                                                rotationSettings.interval_hours ===
+                                                    0 &&
+                                                rotationSettings.interval_minutes ===
+                                                    1
+                                                    ? "border-red-500 bg-red-500/20 text-red-300"
+                                                    : "border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500"
+                                            }`}>
+                                            1 min (test)
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                handleRotationSettingsUpdate(
+                                                    true,
+                                                    0,
+                                                    1,
+                                                    0
+                                                )
+                                            }
+                                            disabled={rotationLoading}
+                                            className={`px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-50 ${
+                                                rotationSettings.interval_days ===
+                                                    0 &&
+                                                rotationSettings.interval_hours ===
+                                                    1 &&
+                                                rotationSettings.interval_minutes ===
+                                                    0
+                                                    ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                                                    : "border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500"
+                                            }`}>
+                                            1 hour
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                handleRotationSettingsUpdate(
+                                                    true,
+                                                    7,
+                                                    0,
+                                                    0
+                                                )
+                                            }
+                                            disabled={rotationLoading}
+                                            className={`px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-50 ${
+                                                rotationSettings.interval_days ===
+                                                    7 &&
+                                                rotationSettings.interval_hours ===
+                                                    0 &&
+                                                rotationSettings.interval_minutes ===
+                                                    0
+                                                    ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                                                    : "border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500"
+                                            }`}>
+                                            7 days
+                                        </button>
+                                        <button
+                                            onClick={() =>
+                                                handleRotationSettingsUpdate(
+                                                    true,
+                                                    30,
+                                                    0,
+                                                    0
+                                                )
+                                            }
+                                            disabled={rotationLoading}
+                                            className={`px-3 py-1.5 text-xs rounded-md border transition-colors disabled:opacity-50 ${
+                                                rotationSettings.interval_days ===
+                                                    30 &&
+                                                rotationSettings.interval_hours ===
+                                                    0 &&
+                                                rotationSettings.interval_minutes ===
+                                                    0
+                                                    ? "border-brand-500 bg-brand-500/20 text-brand-300"
+                                                    : "border-slate-600 bg-slate-700 text-slate-300 hover:border-slate-500"
+                                            }`}>
+                                            30 days
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Current interval display */}
+                                <div className="p-3 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                    <p className="text-sm text-blue-300 font-semibold mb-1">
+                                        Current interval:{" "}
+                                        {rotationSettings.interval_days}d{" "}
+                                        {rotationSettings.interval_hours}h{" "}
+                                        {rotationSettings.interval_minutes}m
+                                    </p>
+                                    <p className="text-xs text-blue-200/90">
+                                        You'll receive notifications when it's
+                                        time to rotate your secrets.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {!rotationSettings?.enabled && (
+                        <div className="p-4 rounded-lg border border-slate-700/50 bg-slate-800/20">
+                            <p className="text-sm text-slate-400 text-center">
+                                Enable notifications to get reminded about key
+                                rotation schedules.
+                            </p>
+                        </div>
+                    )}
+                </div>
             </Card>
         </div>
     );

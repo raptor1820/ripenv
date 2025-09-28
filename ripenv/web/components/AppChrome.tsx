@@ -7,8 +7,11 @@ import { useMemo, useState } from "react";
 import { KeyRound, LayoutDashboard, LogOut } from "lucide-react";
 
 import { Button } from "@/components/Button";
+import { NotificationBell } from "@/components/NotificationBell";
+import { ToastContainer } from "@/components/Toast";
 import { cn } from "@/lib/cn";
 import { supabase } from "@/lib/supabase";
+import { useRotationNotifications } from "@/lib/useRotationNotifications";
 
 const NAV_ITEMS = [
     {
@@ -28,6 +31,9 @@ const NAV_ITEMS = [
 export function AppChrome({ children }: PropsWithChildren) {
     const pathname = usePathname();
     const [signingOut, setSigningOut] = useState(false);
+
+    // Enable rotation notifications globally
+    useRotationNotifications();
 
     const activeHref = useMemo(() => {
         const current = NAV_ITEMS.find((item) => {
@@ -60,6 +66,7 @@ export function AppChrome({ children }: PropsWithChildren) {
                         </Link>
 
                         <div className="flex items-center gap-4">
+                            <NotificationBell />
                             {NAV_ITEMS.map((item) => {
                                 const Icon = item.icon;
                                 const isActive = activeHref === item.href;
@@ -96,6 +103,7 @@ export function AppChrome({ children }: PropsWithChildren) {
                     </div>
                 </main>
             </div>
+            <ToastContainer />
         </div>
     );
 }

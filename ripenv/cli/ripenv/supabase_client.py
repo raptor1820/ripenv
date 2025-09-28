@@ -89,6 +89,27 @@ class SupabaseClient:
             
         except Exception as exc:
             raise ValueError(f"Failed to fetch project info: {exc}")
+    
+    def update_project_last_edited(self, project_id: str) -> None:
+        """Update the last_edited_at timestamp for a project."""
+        try:
+            from datetime import datetime, timezone
+            
+            response = self.client.table("projects") \
+                .update({"last_edited_at": datetime.now(timezone.utc).isoformat()}) \
+                .eq("id", project_id) \
+                .execute()
+            
+            if not response.data:
+                raise ValueError(f"Failed to update project timestamp. Project '{project_id}' may not exist.")
+                
+        except ValueError:
+            raise  # Re-raise our custom messages
+        except Exception as exc:
+            # Don't fail the encryption/decryption process if timestamp update fails
+            # Just log the error and continue
+            import warnings
+            warnings.warn(f"Failed to update project timestamp: {exc}")
 
 
 def create_supabase_client() -> SupabaseClient:

@@ -95,11 +95,11 @@ export default function LandingPage() {
                         <div className="group inline-flex cursor-hover items-center gap-3 rounded-lg border border-green-500/20 bg-black/80 px-6 py-3 backdrop-blur-xl transition-all hover:border-green-400/50 hover:bg-green-900/20">
                             <div className="flex items-center gap-2">
                                 <Shield className="h-4 w-4 text-green-400 animate-pulse" />
-                                <span className="text-sm font-semibold text-green-300 font-mono">
+                                <span className="text-2xl font-semibold text-green-300 font-mono">
                                     ripenv
                                 </span>
                                 <div className="h-1 w-1 rounded-full bg-green-400 animate-ping" />
-                                <span className="text-sm text-green-500/80 font-mono">
+                                <span className="text-lg text-green-500/80 font-mono">
                                     End-to-end encrypted environments
                                 </span>
                             </div>
@@ -107,10 +107,10 @@ export default function LandingPage() {
 
                         {/* Hero title with decrypted text effect */}
                         <div className="space-y-6">
-                            <h1 className="hero-text text-6xl font-black tracking-tight sm:text-8xl">
+                            <h1 className="hero-text text-4xl font-black tracking-tight sm:text-6xl">
                                 <div className="block text-white">
                                     <DecryptedText
-                                        text="Encrypt"
+                                        text="Git maintains your code."
                                         className="block bg-gradient-to-r from-green-400 via-cyan-300 to-green-400 bg-clip-text text-transparent font-mono"
                                         interval={30}
                                         enableHover={true}
@@ -118,7 +118,7 @@ export default function LandingPage() {
                                 </div>
                                 <div className="block text-white mt-2">
                                     <DecryptedText
-                                        text="Everything"
+                                        text="We protect your secrets."
                                         className="block bg-gradient-to-r from-cyan-400 via-green-300 to-cyan-400 bg-clip-text text-transparent font-mono"
                                         interval={30}
                                         enableHover={true}

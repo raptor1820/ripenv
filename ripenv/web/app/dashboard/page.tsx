@@ -15,7 +15,7 @@ import { projectSchema } from "@/lib/z";
 
 type ProjectRow = Pick<
     Database["public"]["Tables"]["projects"]["Row"],
-    "id" | "name" | "owner"
+    "id" | "name" | "owner" | "last_edited_at"
 >;
 
 export default function DashboardPage() {
@@ -85,7 +85,7 @@ function DashboardInner() {
             const [ownedRes, memberRes] = await Promise.all([
                 supabase
                     .from("projects")
-                    .select("id, name, owner")
+                    .select("id, name, owner, last_edited_at")
                     .eq("owner", userData.user.id),
                 supabase
                     .from("project_members")
@@ -112,7 +112,7 @@ function DashboardInner() {
             if (memberIds.length) {
                 const { data, error: projectError } = await supabase
                     .from("projects")
-                    .select("id, name, owner")
+                    .select("id, name, owner, last_edited_at")
                     .in("id", memberIds);
                 if (projectError) {
                     if (!mounted) return;
@@ -156,7 +156,7 @@ function DashboardInner() {
         const { data, error: insertError } = await supabase
             .from("projects")
             .insert({ name: parsed.data.name, owner: userId })
-            .select("id, name, owner")
+            .select("id, name, owner, last_edited_at")
             .single();
 
         if (insertError) {
@@ -299,6 +299,29 @@ function DashboardInner() {
                                                         )}
                                                     </button>
                                                 </div>
+
+                                                {project.last_edited_at && (
+                                                    <div className="mt-3">
+                                                        <p className="text-xs uppercase tracking-wide text-slate-500 mb-1">
+                                                            Last Environment
+                                                            Update
+                                                        </p>
+                                                        <p className="text-xs text-slate-300">
+                                                            {new Date(
+                                                                project.last_edited_at
+                                                            ).toLocaleDateString(
+                                                                "en-US",
+                                                                {
+                                                                    year: "numeric",
+                                                                    month: "short",
+                                                                    day: "numeric",
+                                                                    hour: "2-digit",
+                                                                    minute: "2-digit",
+                                                                }
+                                                            )}
+                                                        </p>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
