@@ -211,6 +211,7 @@ def show_main_interface() -> None:
     commands_table.add_row("ripenv init", "Generate encryption keyfile", "ripenv init")
     commands_table.add_row("ripenv encrypt", "Encrypt environment file", "ripenv encrypt --project-id abc123")
     commands_table.add_row("ripenv decrypt", "Decrypt environment file", "ripenv decrypt --folder ./encrypted --project-id abc123")
+    commands_table.add_row("ripenv hook", "Install pre-commit hook", "ripenv hook")
     commands_table.add_row("ripenv status", "System health dashboard", "ripenv status")
     
     console.print(commands_table)
@@ -609,6 +610,7 @@ def status() -> None:
     operations_table.add_row("ripenv init", "Generate encryption keyfile", "Create secure key pair")
     operations_table.add_row("ripenv encrypt", "Encrypt environment file", "Project-based encryption")
     operations_table.add_row("ripenv decrypt", "Decrypt environment file", "Secure file recovery")
+    operations_table.add_row("ripenv hook", "Install pre-commit hook", "Prevent unencrypted commits")
     operations_table.add_row("ripenv status", "System health dashboard", "Current status check")
     
     console.print(operations_table)
@@ -799,6 +801,7 @@ def encrypt(env_path: Path, project_id: str, out_dir: Path, force: bool, delete:
         task = progress.add_task("🛡️  Adding .gitignore protection...", total=None)
         env_dir = env_path.parent
         ensure_gitignore_entry(env_dir, env_path.name)
+        ensure_gitignore_entry(env_dir, DEFAULT_KEYFILE_NAME)
         time.sleep(0.2)
         progress.remove_task(task)
 
@@ -1077,6 +1080,7 @@ def decrypt(folder_path: Path, project_id: str, keyfile_path: Path, force: bool)
         progress.update(task, description="🛡️  Adding .gitignore protection...")
         # Ensure .gitignore exists to prevent accidental commits of the decrypted .env file
         ensure_gitignore_entry(folder_path, DEFAULT_ENV_NAME)
+        ensure_gitignore_entry(folder_path, DEFAULT_KEYFILE_NAME)
         
         progress.update(task, description="⏰ Updating project timestamp...")
         try:
@@ -1107,3 +1111,193 @@ def decrypt(folder_path: Path, project_id: str, keyfile_path: Path, force: bool)
             "Protected by .gitignore to prevent commits"
         ]
     )
+
+
+@app.command()
+@click.option("--force", is_flag=True, help="Overwrite existing pre-commit hook if present.")
+def hook(force: bool) -> None:
+    """Install a pre-commit hook to ensure environment files are encrypted before commits."""
+    
+    # Show beautiful banner
+    show_animated_banner("Pre-commit Hook Installation")
+    
+    # Enhanced HALO-style presentation
+    console.print(f"Built by [bold {ACCENT_COLOR}]ripenv team[/bold {ACCENT_COLOR}] for secure environment management")
+    console.print(f"Powered by [bold {WARNING_COLOR}]Git Hooks & Rich[/bold {WARNING_COLOR}]")
+    console.print()
+    
+    # Check if we're in a git repository
+    git_dir = Path(".git")
+    if not git_dir.exists():
+        show_error_panel(
+            "Not a Git Repository",
+            "This command must be run from the root of a Git repository.\n\nPlease navigate to your project's root directory and try again."
+        )
+        return
+    
+    # Define hook path
+    hooks_dir = git_dir / "hooks"
+    pre_commit_hook = hooks_dir / "pre-commit"
+    
+    # Check if hooks directory exists, create if not
+    hooks_dir.mkdir(exist_ok=True)
+    
+    # Check for existing hook
+    if pre_commit_hook.exists() and not force:
+        show_warning_panel(
+            "Pre-commit Hook Exists",
+            f"A pre-commit hook already exists at {pre_commit_hook}\n\nUse --force to overwrite, or manually merge the hooks."
+        )
+        return
+    
+    show_info_panel(
+        "Hook Installation",
+        "Installing a pre-commit hook to automatically check for encrypted environment files.",
+        [
+            "Hook will run before each commit",
+            "Checks for unencrypted .env files",
+            "Prevents commits with plaintext secrets",
+            "Suggests using 'ripenv encrypt' command"
+        ]
+    )
+    
+    # Setup steps
+    setup_steps = [
+        "Create hooks directory",
+        "Generate pre-commit script", 
+        "Set executable permissions",
+        "Test hook installation"
+    ]
+    
+    console.print()
+    show_step_progress(setup_steps, 0)
+    console.print()
+
+    # Pre-commit hook script content
+    hook_content = '''#!/bin/sh
+#
+# Pre-commit hook installed by ripenv
+# Prevents commits containing unencrypted environment files
+#
+
+# Colors for output
+RED='\\033[0;31m'
+GREEN='\\033[0;32m'
+YELLOW='\\033[1;33m'
+CYAN='\\033[0;36m'
+NC='\\033[0m' # No Color
+
+echo "${CYAN}[ripenv] Checking for unencrypted environment files...${NC}"
+
+# Check for common environment file patterns that should be encrypted
+env_files_found=false
+problematic_files=""
+
+# Common environment file patterns
+patterns=".env .env.local .env.development .env.production .env.staging .env.test"
+
+for pattern in $patterns; do
+    if [ -f "$pattern" ]; then
+        # Check if this file is staged for commit
+        if git diff --cached --name-only | grep -q "^$pattern$"; then
+            env_files_found=true
+            problematic_files="$problematic_files$pattern "
+        fi
+    fi
+done
+
+# If unencrypted env files are being committed, block the commit
+if [ "$env_files_found" = true ]; then
+    echo "${RED}[ERROR] COMMIT BLOCKED: Unencrypted environment files detected!${NC}"
+    echo ""
+    echo "${YELLOW}The following environment files are staged for commit:${NC}"
+    for file in $problematic_files; do
+        echo "  * $file"
+    done
+    echo ""
+    echo "${CYAN}Security Recommendation:${NC}"
+    echo "Environment files may contain sensitive secrets and should be encrypted before committing."
+    echo ""
+    echo "${GREEN}To fix this issue:${NC}"
+    echo "  1. Remove the files from staging: ${YELLOW}git reset HEAD $problematic_files${NC}"
+    echo "  2. Encrypt your environment file: ${YELLOW}ripenv encrypt --project-id YOUR_PROJECT_ID${NC}"
+    echo "  3. Add the encrypted files instead: ${YELLOW}git add .env.enc ripenv.manifest.json${NC}"
+    echo "  4. Commit the encrypted files: ${YELLOW}git commit -m \"Add encrypted environment secrets\"${NC}"
+    echo ""
+    echo "${CYAN}Note:${NC} If you absolutely need to commit unencrypted files for testing,"
+    echo "use: ${YELLOW}git commit --no-verify${NC} (not recommended for production)"
+    echo ""
+    exit 1
+fi
+
+echo "${GREEN}[SUCCESS] No unencrypted environment files found in commit${NC}"
+exit 0
+'''
+
+    # Step 1: Create hooks directory (already done above)
+    with create_progress_spinner() as progress:
+        task = progress.add_task("📁 Ensuring hooks directory exists...", total=None)
+        time.sleep(0.3)
+        progress.remove_task(task)
+    
+    console.print(f"[{SUCCESS_COLOR}]✓ Hooks directory ready[/{SUCCESS_COLOR}]")
+    show_step_progress(setup_steps, 1)
+    console.print()
+
+    # Step 2: Generate pre-commit script
+    with create_progress_spinner() as progress:
+        task = progress.add_task("📝 Writing pre-commit hook script...", total=None)
+        pre_commit_hook.write_text(hook_content, encoding='utf-8')
+        time.sleep(0.5)
+        progress.remove_task(task)
+    
+    console.print(f"[{SUCCESS_COLOR}]✓ Hook script created[/{SUCCESS_COLOR}]")
+    show_step_progress(setup_steps, 2)
+    console.print()
+
+    # Step 3: Set executable permissions (Unix/Linux/macOS)
+    with create_progress_spinner() as progress:
+        task = progress.add_task("🔧 Setting executable permissions...", total=None)
+        try:
+            import stat
+            # Make the hook executable
+            pre_commit_hook.chmod(pre_commit_hook.stat().st_mode | stat.S_IEXEC)
+            time.sleep(0.3)
+            progress.remove_task(task)
+        except Exception as e:
+            progress.remove_task(task)
+            console.print(f"[{WARNING_COLOR}]⚠ Could not set executable permissions: {e}[/{WARNING_COLOR}]")
+            console.print(f"[{WARNING_COLOR}]  You may need to run: chmod +x {pre_commit_hook}[/{WARNING_COLOR}]")
+    
+    console.print(f"[{SUCCESS_COLOR}]✓ Permissions configured[/{SUCCESS_COLOR}]")
+    show_step_progress(setup_steps, 3)
+    console.print()
+
+    # Step 4: Test hook installation
+    with create_progress_spinner() as progress:
+        task = progress.add_task("🧪 Testing hook installation...", total=None)
+        time.sleep(0.5)
+        progress.remove_task(task)
+    
+    console.print(f"[{SUCCESS_COLOR}]✓ Installation verified[/{SUCCESS_COLOR}]")
+    show_step_progress(setup_steps, 4)
+    console.print()
+
+    # Final success display
+    show_success_panel(
+        "Pre-commit Hook Installed!",
+        "Your repository is now protected against committing unencrypted environment files.",
+        [
+            f"Hook installed at: {pre_commit_hook}",
+            "Automatic checks before every commit",
+            "Prevents accidental secret leaks",
+            "Use 'git commit --no-verify' to bypass (not recommended)"
+        ]
+    )
+    
+    console.print()
+    console.print(f"[{PRIMARY_COLOR}]🚀 Next Steps:[/{PRIMARY_COLOR}]")
+    console.print(f"1. Test the hook: Try committing a .env file to see the protection in action")
+    console.print(f"2. Use [bold {SUCCESS_COLOR}]ripenv encrypt --project-id YOUR_PROJECT_ID[/bold {SUCCESS_COLOR}] to properly encrypt environment files")
+    console.print(f"3. Commit the encrypted files (.env.enc and ripenv.manifest.json) instead")
+    console.print()
