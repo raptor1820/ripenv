@@ -5,6 +5,7 @@ ripenv/crypto.py
 ripenv/keyfile.py
 ripenv/main.py
 ripenv/manifest.py
+ripenv/supabase_client.py
 ripenv/types.py
 ripenv.egg-info/PKG-INFO
 ripenv.egg-info/SOURCES.txt

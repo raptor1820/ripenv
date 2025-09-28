@@ -80,6 +80,22 @@ function KeysInner() {
                 throw new Error(upsertError.message);
             }
 
+            // Sync public key to all project_members entries for this user
+            if (userData.user.email) {
+                const { error: syncError } = await supabase
+                    .from("project_members")
+                    .update({ public_key: keyfile.publicKey })
+                    .eq("email", userData.user.email);
+
+                if (syncError) {
+                    console.warn(
+                        "Failed to sync public key to project members:",
+                        syncError.message
+                    );
+                    // Don't fail the whole operation for this - it's a sync issue
+                }
+            }
+
             downloadJSON(keyfile, "mykey.enc.json");
             setStatus(
                 "Keypair generated. Your encrypted keyfile has downloaded."

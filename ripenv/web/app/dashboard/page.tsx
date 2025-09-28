@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { FormEvent } from "react";
 import { useEffect, useState } from "react";
-import { Plus } from "lucide-react";
+import { Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -153,8 +153,57 @@ function DashboardInner() {
             return;
         }
 
+        // Auto-add the project creator as a member
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData.user?.email) {
+            const { error: memberError } = await supabase
+                .from("project_members")
+                .insert({
+                    project_id: data.id,
+                    email: userData.user.email,
+                });
+
+            if (memberError) {
+                console.warn(
+                    "Failed to add creator as member:",
+                    memberError.message
+                );
+                // Don't fail the whole operation - project was created successfully
+            }
+        }
+
         setProjects((prev: ProjectRow[]) => [data, ...prev]);
         setName("");
+    }
+
+    async function handleDelete(projectId: string, projectName: string) {
+        if (
+            !confirm(
+                `Are you sure you want to delete the project "${projectName}"? This action cannot be undone.`
+            )
+        ) {
+            return;
+        }
+
+        if (!userId) {
+            setError("User session missing");
+            return;
+        }
+
+        const { error: deleteError } = await supabase
+            .from("projects")
+            .delete()
+            .eq("id", projectId)
+            .eq("owner", userId); // Only allow owners to delete
+
+        if (deleteError) {
+            setError(`Failed to delete project: ${deleteError.message}`);
+            return;
+        }
+
+        setProjects((prev: ProjectRow[]) =>
+            prev.filter((p) => p.id !== projectId)
+        );
     }
 
     return (
@@ -201,15 +250,39 @@ function DashboardInner() {
                             <div
                                 key={project.id}
                                 className="rounded-lg border border-slate-700 bg-slate-800 p-4">
-                                <h3 className="text-base font-semibold text-slate-100">
-                                    {project.name}
-                                </h3>
-                                <p className="mt-1 text-xs uppercase tracking-wide text-slate-500">
-                                    Project ID
-                                </p>
-                                <p className="break-all text-xs text-slate-400">
-                                    {project.id}
-                                </p>
+                                <div className="flex items-start justify-between">
+                                    <div className="flex-1">
+                                        <h3 className="text-base font-semibold text-slate-100">
+                                            {project.name}
+                                        </h3>
+                                        <div className="mt-2">
+                                            <p className="text-xs uppercase tracking-wide text-slate-500">
+                                                {project.owner === userId
+                                                    ? "Owner"
+                                                    : "Member"}
+                                            </p>
+                                            <p className="text-xs uppercase tracking-wide text-slate-500 mt-1">
+                                                Project ID
+                                            </p>
+                                            <p className="break-all text-xs text-slate-400">
+                                                {project.id}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    {project.owner === userId && (
+                                        <button
+                                            onClick={() =>
+                                                handleDelete(
+                                                    project.id,
+                                                    project.name
+                                                )
+                                            }
+                                            className="ml-2 rounded-lg border border-red-500/20 bg-red-500/10 p-2 text-red-300 transition hover:border-red-400 hover:bg-red-500/20"
+                                            title="Delete project">
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                    )}
+                                </div>
                                 <Button
                                     className="mt-4 w-full"
                                     onClick={() =>

@@ -3,7 +3,7 @@
 import type { ChangeEvent, FormEvent } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { UserPlus, Download, ArrowLeft } from "lucide-react";
+import { UserPlus, Download, ArrowLeft, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
@@ -30,6 +30,8 @@ function ProjectPageInner() {
     const projectId = params?.id ?? "";
 
     const [projectName, setProjectName] = useState<string>("");
+    const [projectOwner, setProjectOwner] = useState<string>("");
+    const [currentUserId, setCurrentUserId] = useState<string>("");
     const [members, setMembers] = useState<MemberRow[]>([]);
     const [email, setEmail] = useState("");
     const [error, setError] = useState<string | null>(null);
@@ -37,13 +39,23 @@ function ProjectPageInner() {
 
     useEffect(() => {
         async function load() {
+            // Get current user
+            const { data: userData, error: userError } =
+                await supabase.auth.getUser();
+            if (userError || !userData.user) {
+                setError("Unable to load user session");
+                setLoading(false);
+                return;
+            }
+            setCurrentUserId(userData.user.id);
+
             const [
                 { data: project, error: projectError },
                 { data: memberRows, error: memberError },
             ] = await Promise.all([
                 supabase
                     .from("projects")
-                    .select("name")
+                    .select("name, owner")
                     .eq("id", projectId)
                     .single(),
                 supabase
@@ -64,6 +76,7 @@ function ProjectPageInner() {
             }
 
             setProjectName(project?.name ?? "");
+            setProjectOwner(project?.owner ?? "");
 
             const emails = (memberRows ?? []).map((member) => member.email);
             let mergedMembers = memberRows ?? [];
@@ -94,6 +107,36 @@ function ProjectPageInner() {
                         member.public_key ??
                         null,
                 }));
+
+                // Sync public keys from profiles to project_members table
+                // This ensures the CLI can find public keys in project_members
+                const syncUpdates = mergedMembers
+                    .filter(
+                        (member) =>
+                            member.public_key && member.public_key !== null
+                    )
+                    .map(async (member) => {
+                        if (member.public_key !== null) {
+                            return supabase
+                                .from("project_members")
+                                .update({ public_key: member.public_key })
+                                .eq("project_id", projectId)
+                                .eq("email", member.email);
+                        }
+                    })
+                    .filter(Boolean);
+
+                if (syncUpdates.length > 0) {
+                    try {
+                        await Promise.all(syncUpdates);
+                    } catch (syncError) {
+                        console.warn(
+                            "Failed to sync some public keys to project_members:",
+                            syncError
+                        );
+                        // Don't fail the page load for sync issues
+                    }
+                }
             }
 
             setMembers(mergedMembers);
@@ -148,6 +191,20 @@ function ProjectPageInner() {
     }
 
     async function handleRemoveMember(memberEmail: string) {
+        // Only allow project owners to remove members
+        if (currentUserId !== projectOwner) {
+            setError("Only project owners can remove members");
+            return;
+        }
+
+        if (
+            !confirm(
+                `Are you sure you want to remove ${memberEmail} from the project?`
+            )
+        ) {
+            return;
+        }
+
         const { error: deleteError } = await supabase
             .from("project_members")
             .delete()
@@ -160,6 +217,35 @@ function ProjectPageInner() {
         setMembers((prev: MemberRow[]) =>
             prev.filter((member) => member.email !== memberEmail)
         );
+    }
+
+    async function handleDeleteProject() {
+        if (currentUserId !== projectOwner) {
+            setError("Only project owners can delete projects");
+            return;
+        }
+
+        if (
+            !confirm(
+                `Are you sure you want to delete the project "${projectName}"? This action cannot be undone and will remove all members and data.`
+            )
+        ) {
+            return;
+        }
+
+        const { error: deleteError } = await supabase
+            .from("projects")
+            .delete()
+            .eq("id", projectId)
+            .eq("owner", currentUserId);
+
+        if (deleteError) {
+            setError(`Failed to delete project: ${deleteError.message}`);
+            return;
+        }
+
+        // Redirect to dashboard after successful deletion
+        router.push("/dashboard");
     }
 
     const approvedMembers = useMemo(
@@ -178,13 +264,30 @@ function ProjectPageInner() {
                     Back to dashboard
                 </button>
 
-                <div>
-                    <h1 className="text-3xl font-semibold text-slate-100">
-                        {projectName || "Project"}
-                    </h1>
-                    <p className="mt-1 font-mono text-xs text-slate-500">
-                        ID: {projectId}
-                    </p>
+                <div className="flex items-start justify-between">
+                    <div>
+                        <h1 className="text-3xl font-semibold text-slate-100">
+                            {projectName || "Project"}
+                        </h1>
+                        <p className="mt-1 font-mono text-xs text-slate-500">
+                            ID: {projectId}
+                        </p>
+                        <p className="mt-1 text-xs uppercase tracking-wide text-slate-400">
+                            {currentUserId === projectOwner
+                                ? "Owner"
+                                : "Member"}
+                        </p>
+                    </div>
+
+                    {currentUserId === projectOwner && (
+                        <button
+                            onClick={handleDeleteProject}
+                            className="rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm font-semibold text-red-300 transition hover:border-red-400 hover:bg-red-500/20"
+                            title="Delete entire project">
+                            <Trash2 className="mr-1 inline h-4 w-4" />
+                            Delete Project
+                        </button>
+                    )}
                 </div>
 
                 <Button
@@ -200,29 +303,47 @@ function ProjectPageInner() {
                 </Button>
             </header>
 
-            <Card
-                title="Add member"
-                description="Invite collaborators by email. They appear once they accept the magic link and upload a public key.">
-                <form
-                    onSubmit={handleAddMember}
-                    className="flex flex-col gap-3 sm:flex-row">
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(event: ChangeEvent<HTMLInputElement>) =>
-                            setEmail(event.target.value)
-                        }
-                        placeholder="teammate@example.com"
-                        required
-                        className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none"
-                    />
-                    <Button type="submit" className="sm:w-32">
-                        <UserPlus className="h-4 w-4" />
-                        Add member
-                    </Button>
-                </form>
-                {error && <p className="mt-3 text-sm text-red-400">{error}</p>}
-            </Card>
+            {currentUserId === projectOwner && (
+                <Card
+                    title="Add member"
+                    description="Invite collaborators by email. They appear once they accept the magic link and upload a public key.">
+                    <form
+                        onSubmit={handleAddMember}
+                        className="flex flex-col gap-3 sm:flex-row">
+                        <input
+                            type="email"
+                            value={email}
+                            onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                                setEmail(event.target.value)
+                            }
+                            placeholder="teammate@example.com"
+                            required
+                            className="flex-1 rounded-lg border border-slate-700 bg-slate-800 px-4 py-2 text-slate-100 placeholder-slate-400 focus:border-brand-500 focus:outline-none"
+                        />
+                        <Button type="submit" className="sm:w-32">
+                            <UserPlus className="h-4 w-4" />
+                            Add member
+                        </Button>
+                    </form>
+                    {error && (
+                        <p className="mt-3 text-sm text-red-400">{error}</p>
+                    )}
+                </Card>
+            )}
+
+            {currentUserId !== projectOwner && (
+                <Card
+                    title="Project Member"
+                    description="You are a member of this project. Only the project owner can add or remove members.">
+                    <div className="flex items-center gap-3 text-sm text-slate-400">
+                        <div className="h-2 w-2 rounded-full bg-blue-400" />
+                        <span>
+                            Contact the project owner to make changes to project
+                            membership.
+                        </span>
+                    </div>
+                </Card>
+            )}
 
             <Card
                 title="Authorized members"
@@ -240,14 +361,17 @@ function ProjectPageInner() {
                             <TableRow
                                 key={member.email}
                                 actions={
-                                    <button
-                                        type="button"
-                                        onClick={() =>
-                                            handleRemoveMember(member.email)
-                                        }
-                                        className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-red-300 transition hover:border-red-400 hover:bg-red-500/20">
-                                        Remove
-                                    </button>
+                                    currentUserId === projectOwner ? (
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                handleRemoveMember(member.email)
+                                            }
+                                            className="rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.15em] text-red-300 transition hover:border-red-400 hover:bg-red-500/20"
+                                            title="Remove member from project">
+                                            Remove
+                                        </button>
+                                    ) : null
                                 }>
                                 <div className="space-y-2">
                                     <p className="font-semibold text-slate-100">
