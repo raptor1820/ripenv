@@ -3,6 +3,7 @@ pyproject.toml
 ripenv/__init__.py
 ripenv/crypto.py
 ripenv/keyfile.py
+ripenv/llm_agent.py
 ripenv/main.py
 ripenv/manifest.py
 ripenv/supabase_client.py

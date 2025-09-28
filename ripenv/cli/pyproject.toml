@@ -15,7 +15,8 @@ dependencies = [
     "python-dotenv>=1.0",
     "rich>=13.0",
     "email-validator>=2.1",
-    "supabase>=2.0"
+    "supabase>=2.0",
+    "google-genai>=0.3"
 ]
 
 [project.urls]

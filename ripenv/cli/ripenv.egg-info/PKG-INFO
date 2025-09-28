@@ -14,6 +14,7 @@ Requires-Dist: python-dotenv>=1.0
 Requires-Dist: rich>=13.0
 Requires-Dist: email-validator>=2.1
 Requires-Dist: supabase>=2.0
+Requires-Dist: google-genai>=0.3
 
 # ripenv CLI
 

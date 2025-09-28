@@ -46,7 +46,7 @@ HIGHLIGHT_COLOR = "bold bright_white"
 
 def show_animated_banner(text: str = "") -> None:
     """Display an animated banner with ripenv branding."""
-    # Large ASCII art similar to HALO
+        # Unicode banner for Unix systems
     banner_art = """
 ██████╗ ██╗██████╗ ███████╗███╗   ██╗██╗   ██╗
 ██╔══██╗██║██╔══██╗██╔════╝████╗  ██║██║   ██║
@@ -54,23 +54,37 @@ def show_animated_banner(text: str = "") -> None:
 ██╔══██╗██║██╔═══╝ ██╔══╝  ██║╚██╗██║╚██╗ ██╔╝
 ██║  ██║██║██║     ███████╗██║ ╚████║ ╚████╔╝ 
 ╚═╝  ╚═╝╚═╝╚═╝     ╚══════╝╚═╝  ╚═══╝  ╚═══╝  
-    """
-    
-    # Create dotted border line
+        """
     border_dots = "·" * 80
     
-    console.print(f"[{ACCENT_COLOR}]{border_dots}[/{ACCENT_COLOR}]")
-    console.print()
-    console.print(Align.center(Text(banner_art, style=f"bold {PRIMARY_COLOR}")))
-    console.print()
-    console.print(f"[{ACCENT_COLOR}]{border_dots}[/{ACCENT_COLOR}]")
-    console.print()
-    
-    if text:
-        console.print(f"[{SECONDARY_COLOR}]🔐 RIPENV:[/{SECONDARY_COLOR}] [bold {HIGHLIGHT_COLOR}]{text}[/bold {HIGHLIGHT_COLOR}]")
+    try:
+        console.print(f"[{ACCENT_COLOR}]{border_dots}[/{ACCENT_COLOR}]")
         console.print()
-        console.print(f"[{SUCCESS_COLOR}]🛡️  Advanced Environment Secret Manager[/{SUCCESS_COLOR}]")
+        console.print(Align.center(Text(banner_art, style=f"bold {PRIMARY_COLOR}")))
         console.print()
+        console.print(f"[{ACCENT_COLOR}]{border_dots}[/{ACCENT_COLOR}]")
+        console.print()
+        
+        if text:
+            console.print(f"[{SECONDARY_COLOR}]🔐 RIPENV:[/{SECONDARY_COLOR}] [bold {HIGHLIGHT_COLOR}]{text}[/bold {HIGHLIGHT_COLOR}]")
+            console.print()
+            console.print(f"[{SUCCESS_COLOR}]🛡️  Advanced Environment Secret Manager[/{SUCCESS_COLOR}]")
+            console.print()
+            
+    except UnicodeEncodeError:
+        # Fallback to simple text banner if Unicode still fails
+        console.print(f"[{ACCENT_COLOR}]{'-' * 80}[/{ACCENT_COLOR}]")
+        console.print()
+        console.print(Align.center(Text("R I P E N V", style=f"bold {PRIMARY_COLOR}")))
+        console.print()
+        console.print(f"[{ACCENT_COLOR}]{'-' * 80}[/{ACCENT_COLOR}]")
+        console.print()
+        
+        if text:
+            console.print(f"[{SECONDARY_COLOR}]RIPENV:[/{SECONDARY_COLOR}] [bold {HIGHLIGHT_COLOR}]{text}[/bold {HIGHLIGHT_COLOR}]")
+            console.print()
+            console.print(f"[{SUCCESS_COLOR}]Advanced Environment Secret Manager[/{SUCCESS_COLOR}]")
+            console.print()
 
 def create_progress_spinner() -> Progress:
     """Create a consistent progress spinner for long operations."""
@@ -207,11 +221,12 @@ def show_main_interface() -> None:
     commands_table.add_column("📋 Description", style=ACCENT_COLOR)
     commands_table.add_column("🔧 Usage Example", style=MUTED_COLOR)
     
-    commands_table.add_row("ripenv configure", "Setup Supabase credentials", "ripenv configure")
+    commands_table.add_row("ripenv configure", "Setup Supabase & AI credentials", "ripenv configure")
     commands_table.add_row("ripenv init", "Generate encryption keyfile", "ripenv init")
     commands_table.add_row("ripenv encrypt", "Encrypt environment file", "ripenv encrypt --project-id abc123")
     commands_table.add_row("ripenv decrypt", "Decrypt environment file", "ripenv decrypt --folder ./encrypted --project-id abc123")
     commands_table.add_row("ripenv hook", "Install pre-commit hook", "ripenv hook")
+    commands_table.add_row("ripenv ai", "Natural language interface", "ripenv ai encrypt my environment")
     commands_table.add_row("ripenv status", "System health dashboard", "ripenv status")
     
     console.print(commands_table)
@@ -219,9 +234,10 @@ def show_main_interface() -> None:
     
     # Quick start guide
     console.print(f"[{SUCCESS_COLOR}]🚀 Quick Start:[/{SUCCESS_COLOR}]")
-    console.print(f"1. Run [bold {PRIMARY_COLOR}]ripenv configure[/bold {PRIMARY_COLOR}] to setup Supabase credentials")
+    console.print(f"1. Run [bold {PRIMARY_COLOR}]ripenv configure[/bold {PRIMARY_COLOR}] to setup Supabase & AI credentials")
     console.print(f"2. Run [bold {PRIMARY_COLOR}]ripenv init[/bold {PRIMARY_COLOR}] to create your encryption keyfile")
-    console.print(f"3. Run [bold {PRIMARY_COLOR}]ripenv status[/bold {PRIMARY_COLOR}] to verify everything is working")
+    console.print(f"3. Try [bold {ACCENT_COLOR}]ripenv ai encrypt my environment[/bold {ACCENT_COLOR}] for natural language control")
+    console.print(f"4. Run [bold {PRIMARY_COLOR}]ripenv status[/bold {PRIMARY_COLOR}] to verify everything is working")
     console.print()
     console.print(f"[{MUTED_COLOR}]Use --help with any command for detailed usage information[/{MUTED_COLOR}]")
 DEFAULT_ENV_NAME = ".env"
@@ -398,16 +414,17 @@ def configure(force: bool) -> None:
     
     # Show setup steps
     setup_steps = [
-        "Gather Supabase credentials",
+        "Gather Supabase & AI credentials",
         "Validate connection details", 
         "Save configuration",
-        "Test connection"
+        "Test connections"
     ]
     
     show_info_panel(
         "Setup Process", 
-        "Let's configure your ripenv CLI with Supabase credentials.",
-        ["These are the same values from your web app's .env.local file", 
+        "Let's configure your ripenv CLI with Supabase and optionally Google Gemini credentials.",
+        ["Supabase values are from your web app's .env.local file", 
+         "Google Gemini API key enables natural language AI assistant",
          "Your credentials will be stored securely in ~/.ripenv/config.env"]
     )
     
@@ -449,6 +466,33 @@ def configure(force: bool) -> None:
         console.print(f"[{SUCCESS_COLOR}]✓ Valid key format[/{SUCCESS_COLOR}]")
     
     console.print()
+    
+    # Prompt for Google Gemini API key (optional)
+    console.print(f"[{ACCENT_COLOR}]🤖 AI Assistant Configuration (Optional)[/{ACCENT_COLOR}]")
+    console.print("The AI assistant allows natural language interaction with ripenv CLI.")
+    console.print("You can skip this and add it later by re-running configure.")
+    console.print()
+    
+    add_gemini = click.confirm(
+        f"[{PRIMARY_COLOR}]Would you like to configure AI assistant with Google Gemini?[/{PRIMARY_COLOR}]",
+        default=True
+    )
+    
+    gemini_key = ""
+    if add_gemini:
+        gemini_key = click.prompt(
+            f"[{PRIMARY_COLOR}]Google Gemini API Key (starts with AIza...)[/{PRIMARY_COLOR}]", 
+            type=str,
+            hide_input=True
+        ).strip()
+        
+        # Validate key format
+        if not gemini_key.startswith("AIza"):
+            show_warning_panel("Key Format Warning", "Google Gemini API key should start with 'AIza'")
+        else:
+            console.print(f"[{SUCCESS_COLOR}]✓ Valid Gemini key format[/{SUCCESS_COLOR}]")
+    
+    console.print()
     show_step_progress(setup_steps, 1)
     console.print()
     
@@ -464,6 +508,11 @@ def configure(force: bool) -> None:
 RIPENV_SUPABASE_URL={supabase_url}
 RIPENV_SUPABASE_ANON_KEY={anon_key}
 """
+        
+        # Add Google Gemini key if provided
+        if gemini_key:
+            config_content += f"GOOGLE_API_KEY={gemini_key}\n"
+        
         CONFIG_FILE.write_text(config_content)
         time.sleep(0.2)
         progress.remove_task(task)
@@ -486,14 +535,21 @@ RIPENV_SUPABASE_ANON_KEY={anon_key}
             show_step_progress(setup_steps, 3)
             console.print()
             
+            success_items = [
+                f"Configuration saved to: {CONFIG_FILE}",
+                "Supabase connection verified successfully",
+                "You can now use 'ripenv encrypt' and 'ripenv decrypt' commands"
+            ]
+            
+            if gemini_key:
+                success_items.append("AI assistant configured - try 'ripenv ai encrypt my environment'")
+            else:
+                success_items.append("AI assistant not configured - run 'ripenv configure' to add later")
+            
             show_success_panel(
                 "Configuration Complete!",
                 "Your ripenv CLI is now configured and ready to use.",
-                [
-                    f"Configuration saved to: {CONFIG_FILE}",
-                    "Supabase connection verified successfully",
-                    "You can now use 'ripenv encrypt' and 'ripenv decrypt' commands"
-                ]
+                success_items
             )
             
         except Exception as exc:
@@ -606,11 +662,12 @@ def status() -> None:
     operations_table.add_column("📋 Description", style=ACCENT_COLOR)
     operations_table.add_column("🔧 Usage", style=MUTED_COLOR)
     
-    operations_table.add_row("ripenv configure", "Setup Supabase credentials", "Interactive setup wizard")
+    operations_table.add_row("ripenv configure", "Setup Supabase & AI credentials", "Interactive setup wizard")
     operations_table.add_row("ripenv init", "Generate encryption keyfile", "Create secure key pair")
     operations_table.add_row("ripenv encrypt", "Encrypt environment file", "Project-based encryption")
     operations_table.add_row("ripenv decrypt", "Decrypt environment file", "Secure file recovery")
     operations_table.add_row("ripenv hook", "Install pre-commit hook", "Prevent unencrypted commits")
+    operations_table.add_row("ripenv ai", "Natural language interface", "AI-powered assistance")
     operations_table.add_row("ripenv status", "System health dashboard", "Current status check")
     
     console.print(operations_table)
@@ -1300,4 +1357,144 @@ exit 0
     console.print(f"1. Test the hook: Try committing a .env file to see the protection in action")
     console.print(f"2. Use [bold {SUCCESS_COLOR}]ripenv encrypt --project-id YOUR_PROJECT_ID[/bold {SUCCESS_COLOR}] to properly encrypt environment files")
     console.print(f"3. Commit the encrypted files (.env.enc and ripenv.manifest.json) instead")
+    console.print()
+
+
+@app.command()
+@click.argument("prompt", nargs=-1, required=True)
+@click.option("--auto", is_flag=True, help="Skip confirmation and execute automatically.")
+def ai(prompt: tuple[str, ...], auto: bool) -> None:
+    """Use natural language to interact with ripenv CLI powered by Google Gemini."""
+    
+    # Show beautiful banner
+    show_animated_banner("AI Assistant")
+    
+    # Enhanced HALO-style presentation
+    console.print(f"Built by [bold {ACCENT_COLOR}]ripenv team[/bold {ACCENT_COLOR}] with Google Gemini integration")
+    console.print(f"Powered by [bold {WARNING_COLOR}]Gemini & Natural Language Processing[/bold {WARNING_COLOR}]")
+    console.print()
+    
+    # Join the prompt arguments into a single string
+    user_input = " ".join(prompt)
+    
+    show_info_panel(
+        "AI Processing",
+        f"Analyzing your request: \"{user_input}\"",
+        [
+            "Using Google Gemini to understand your intent",
+            "Will ask for clarification if needed",
+            "Executes ripenv commands automatically",
+            "Provides helpful guidance and feedback"
+        ]
+    )
+    
+    console.print()
+    
+    # Processing steps
+    processing_steps = [
+        "Parse natural language input",
+        "Determine command and parameters",
+        "Collect missing information",
+        "Execute ripenv command",
+        "Provide results and feedback"
+    ]
+    
+    show_step_progress(processing_steps, 0)
+    console.print()
+    
+    # Step 1: Parse user intent using OpenAI
+    with create_progress_spinner() as progress:
+        task = progress.add_task("🤖 Analyzing your request with AI...", total=None)
+        
+        try:
+            from .llm_agent import parse_user_intent
+            intent = parse_user_intent(user_input)
+            time.sleep(0.5)  # Brief pause for effect
+            progress.remove_task(task)
+            
+        except Exception as e:
+            progress.remove_task(task)
+            show_error_panel(
+                "AI Processing Failed",
+                f"Could not analyze your request: {e}\n\nPlease check your Google Gemini API key configuration."
+            )
+            return
+    
+    console.print(f"[{SUCCESS_COLOR}]✓ Intent analyzed successfully[/{SUCCESS_COLOR}]")
+    show_step_progress(processing_steps, 1)
+    console.print()
+    
+    # Step 2: Show intent and get confirmation (unless auto mode)
+    if not auto:
+        try:
+            from .llm_agent import show_intent_confirmation
+            confirmed = show_intent_confirmation(intent, user_input)
+            if not confirmed:
+                console.print("\n[yellow]⚠️ Operation cancelled by user[/yellow]")
+                return
+        except Exception as e:
+            show_error_panel("Confirmation Error", f"Could not show confirmation: {e}")
+            return
+    
+    console.print(f"[{SUCCESS_COLOR}]✓ Intent confirmed[/{SUCCESS_COLOR}]")
+    show_step_progress(processing_steps, 2)
+    console.print()
+    
+    # Step 3: Collect any missing parameters
+    parameters = intent.get("parameters", {})
+    clarification_needed = intent.get("clarification_needed", [])
+    
+    if clarification_needed:
+        try:
+            from .llm_agent import collect_missing_parameters
+            parameters = collect_missing_parameters(clarification_needed, parameters)
+        except Exception as e:
+            show_error_panel("Parameter Collection Failed", f"Could not collect parameters: {e}")
+            return
+    
+    console.print(f"[{SUCCESS_COLOR}]✓ All parameters collected[/{SUCCESS_COLOR}]")
+    show_step_progress(processing_steps, 3)
+    console.print()
+    
+    # Step 4: Execute the command
+    command = intent.get("command")
+    if not command:
+        show_error_panel("Invalid Command", "No valid command could be determined from your request.")
+        return
+    
+    try:
+        from .llm_agent import execute_command
+        success = execute_command(command, parameters)
+        
+        if success:
+            console.print(f"[{SUCCESS_COLOR}]✓ Command executed successfully[/{SUCCESS_COLOR}]")
+            show_step_progress(processing_steps, 4)
+        else:
+            show_error_panel("Command Execution Failed", "The command did not complete successfully.")
+            return
+            
+    except Exception as e:
+        show_error_panel("Execution Error", f"Could not execute command: {e}")
+        return
+    
+    console.print()
+    
+    # Step 5: Final success display
+    show_success_panel(
+        "AI Assistant Complete!",
+        f"Successfully processed your request: \"{user_input}\"",
+        [
+            f"Command executed: ripenv {command}",
+            f"Confidence level: {intent.get('confidence', 0):.1%}",
+            "All operations completed successfully",
+            "Ready for your next natural language request"
+        ]
+    )
+    
+    console.print()
+    console.print(f"[{PRIMARY_COLOR}]💡 Tips for AI Assistant:[/{PRIMARY_COLOR}]")
+    console.print(f"• Try: [bold]ripenv ai encrypt my environment[/bold]")
+    console.print(f"• Try: [bold]ripenv ai decrypt secrets for project abc123[/bold]")
+    console.print(f"• Try: [bold]ripenv ai add a git hook[/bold]")
+    console.print(f"• Use [bold]--auto[/bold] flag to skip confirmations")
     console.print()
