@@ -180,31 +180,16 @@ def show_step_progress(steps: list[str], current_step: int) -> None:
     console.print(table)
 
 def show_main_interface() -> None:
-    """Display the main HALO-style interface when ripenv is run without commands."""
     
     # Show beautiful banner
     show_animated_banner("Interactive Environment Secret Manager")
     
     # Enhanced HALO-style presentation
     console.print(f"Built by [bold {ACCENT_COLOR}]ripenv team[/bold {ACCENT_COLOR}] for secure environment management")
-    console.print(f"Powered by [bold {WARNING_COLOR}]Supabase & Rich[/bold {WARNING_COLOR}]")
-    console.print()
-    
-    console.print(f"[{SUCCESS_COLOR}]🔐 AI-Powered Supabase Integration[/{SUCCESS_COLOR}]")
-    console.print()
-    console.print("Interactive Environment Secret Manager for encrypting and managing")
-    console.print("your application secrets using advanced encryption technology.")
-    console.print()
-    
-    # Prerequisites section
-    console.print(f"[{WARNING_COLOR}]📋 Prerequisites:[/{WARNING_COLOR}]")
-    console.print(f"• Supabase project with configured tables")
-    console.print(f"• Team members added to your ripenv project")
-    console.print(f"• Local keyfile for encryption/decryption")
     console.print()
     
     # GitHub repo link
-    console.print(f"[{WARNING_COLOR}]🌟 GitHub Repository:[/{WARNING_COLOR}] [link=https://github.com/your-repo/ripenv][{ACCENT_COLOR}]https://github.com/your-repo/ripenv[/{ACCENT_COLOR}][/link]")
+    console.print(f"[{WARNING_COLOR}]🌟 GitHub Repository:[/{WARNING_COLOR}] [link=https://github.com/raptor1820/ripenv][{ACCENT_COLOR}]https://github.com/raptor1820/ripenv[/{ACCENT_COLOR}][/link]")
     console.print()
     
     # Available commands in HALO style
