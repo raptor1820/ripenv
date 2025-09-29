@@ -221,7 +221,7 @@ def show_main_interface() -> None:
     console.print(f"[{SUCCESS_COLOR}]🚀 Quick Start:[/{SUCCESS_COLOR}]")
     console.print(f"1. Run [bold {PRIMARY_COLOR}]ripenv configure[/bold {PRIMARY_COLOR}] to setup Supabase & AI credentials")
     console.print(f"2. Run [bold {PRIMARY_COLOR}]ripenv init[/bold {PRIMARY_COLOR}] to create your encryption keyfile")
-    console.print(f"3. Try [bold {ACCENT_COLOR}]ripenv ai encrypt my environment[/bold {ACCENT_COLOR}] for natural language control")
+    console.print(f"3. Try [bold {ACCENT_COLOR}]ripenv ai \"encrypt my environment\"[/bold {ACCENT_COLOR}] for natural language control")
     console.print(f"4. Run [bold {PRIMARY_COLOR}]ripenv status[/bold {PRIMARY_COLOR}] to verify everything is working")
     console.print()
     console.print(f"[{MUTED_COLOR}]Use --help with any command for detailed usage information[/{MUTED_COLOR}]")
